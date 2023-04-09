@@ -11,10 +11,15 @@ int main(void) {
 	SysTick_Init(16000);
 
 	/* GPIO set */
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN;
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOFEN;
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOGEN;	
 
 	GPIO_Init(GPIOG, 13);
 	GPIO_Init(GPIOG, 14);
+	
+	GPIO_L3GD20_Init(GPIOxx, pin , af_num...<<--edit
 
 	USART_Init(USART1);
 
@@ -58,7 +63,10 @@ int main(void) {
 			GPIOG->ODR ^= 1<<14;
 		}else if(!(strcmp(st, "clear"))){
 			usart_send(USART1, clear);
+<<<<<<< HEAD
 			usart_send(USART1, clear);
+=======
+>>>>>>> 49e7f74 (Some initial tweaks)
 		}else{
 			usart_send(USART1, "My bad");
 			GPIOG->ODR ^= 1<<13;
@@ -71,9 +79,13 @@ int main(void) {
 	}
 
 	while (1){
+<<<<<<< HEAD
 		GPIOG->ODR ^= 1<<13;
 
 		Delay(1000);
+=======
+		__asm__("nop");
+>>>>>>> 49e7f74 (Some initial tweaks)
 	}
 }
 
