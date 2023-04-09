@@ -63,10 +63,6 @@ int main(void) {
 			GPIOG->ODR ^= 1<<14;
 		}else if(!(strcmp(st, "clear"))){
 			usart_send(USART1, clear);
-<<<<<<< HEAD
-			usart_send(USART1, clear);
-=======
->>>>>>> 49e7f74 (Some initial tweaks)
 		}else{
 			usart_send(USART1, "My bad");
 			GPIOG->ODR ^= 1<<13;
@@ -79,13 +75,7 @@ int main(void) {
 	}
 
 	while (1){
-<<<<<<< HEAD
-		GPIOG->ODR ^= 1<<13;
-
-		Delay(1000);
-=======
 		__asm__("nop");
->>>>>>> 49e7f74 (Some initial tweaks)
 	}
 }
 
