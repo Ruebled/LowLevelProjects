@@ -37,6 +37,7 @@ $(PROJECT).elf: $(OBJS)
 
 clean:
 	rm -r $(BUILD_DIR)
+	rm terminal*
 
 load:
 	$(FLASHER) write $(PROJECT).bin 0x08000000

@@ -1,6 +1,11 @@
 #ifndef SPI_H
 #define SPI_H
+#include <stdint.h>
 
-void SPI_Init();
+void SPI5_Init();
+
+void SPI5_Write(uint8_t whoami, uint8_t *buff);
+
+void SPI5_Read(uint8_t *buff);
 
 #endif

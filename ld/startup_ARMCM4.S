@@ -85,6 +85,13 @@ __isr_vector:
 	.long	0                     /* Reserved */
 	.long	PendSV_Handler        /* PendSV Handler */
 	.long	SysTick_Handler       /* SysTick Handler */
+	.long	WWDG_Handler		  /* Window Watchdog Handler */
+	.long	PVD_Handler			  /* PVD through EXTI line Handler */
+	.long	TAMP_STAMP_Handler	  /* Tamper and TimeStamp Handler */
+	.long	RTC_WKUP_Handler	  /* RTC Wakeup interrup Handler */
+	.long	FLASH_Handler		  /* Flash Handler */
+	.long 	RCC_Handler			  /* RCC Handler */
+	.long	EXTI0_Handler		  /* EXTI0 Handler */
 
 	/* External interrupts */
 	.long	Default_Handler
@@ -252,6 +259,13 @@ Default_Handler:
 	def_irq_handler	DebugMon_Handler
 	def_irq_handler	PendSV_Handler
 	def_irq_handler	SysTick_Handler
+	def_irq_handler	WWDG_Handler		
+	def_irq_handler	PVD_Handler			
+	def_irq_handler	TAMP_STAMP_Handler	
+	def_irq_handler	RTC_WKUP_Handler	
+	def_irq_handler	FLASH_Handler		
+	def_irq_handler RCC_Handler			
+	def_irq_handler	EXTI0_Handler		
 	def_irq_handler	DEF_IRQHandler
 
 	.end
