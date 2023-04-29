@@ -1,20 +1,18 @@
 include makefile.conf
 
-
 BUILD_DIR = bin
-OBJ = obj
-
-LIBS=libs
 SRC=src
-INC=-Iinc
+PROJ=proj
+INC=inc
 
 SRCS := $(shell find $(SRC) -name '*.c')
-OBJS += $(SRCS:$(SRC)%.c=$(BUILD_DIR)%.o)
+PROJS += $(shell find $(PROJ) -name '$(PROJECT).c')
+
 OBJS += $(BUILD_DIR)/startup_ARMCM4.o
+OBJS += $(SRCS:$(SRC)/%.c=$(BUILD_DIR)/%.o)
+OBJS += $(PROJS:$(PROJ)/$(PROJECT)%.c=$(BUILD_DIR)/$(PROJECT).o)
 
-DEPS := $(OBJS:.o=.d)
-
-INC_DIRS := $(shell find $(SRC) -type d)
+INC_DIRS := $(shell find $(INC) -type d)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 all: $(PROJECT).bin
@@ -25,7 +23,11 @@ $(BUILD_DIR)/%.o: ld/%.S
 
 $(BUILD_DIR)/%.o: $(SRC)/%.c
 	mkdir -p $(dir $@)
-	$(TOOLCHAIN) $(CFLAGS) $(INC) -c -o $@ $<
+	$(TOOLCHAIN) $(CFLAGS) -Iinc -c -o $@ $<
+
+$(BUILD_DIR)/%.o: $(PROJ)/%.c
+	mkdir -p $(dir $@)
+	$(TOOLCHAIN) $(CFLAGS) -Iinc -c -o $@ $<
 
 $(PROJECT).bin: $(PROJECT).elf
 	$(OBJCOPY) -O binary $< $@
@@ -37,7 +39,7 @@ $(PROJECT).elf: $(OBJS)
 
 clean:
 	rm -r $(BUILD_DIR)
-	rm terminal*
+	rm $(PROJECT)*
 
 load:
 	$(FLASHER) write $(PROJECT).bin 0x08000000

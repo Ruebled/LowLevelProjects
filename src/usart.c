@@ -53,7 +53,6 @@ void usart_send(USART_TypeDef * USARTx, char *s)
 		}
 		s++;
 	}
-
 }
 
 void usart_send_char(USART_TypeDef * USARTx, char ch)
@@ -69,7 +68,7 @@ void usart_get(USART_TypeDef * USARTx, char* s, int len){
 	int cnt = 0;
 
 	while((c = usart_get_char(USARTx))!= '\r'){
-		if(c == '\010'){
+		if(c == '\010' && t>s){
 			usart_send(USARTx, "\010 \010");
 			*t = '\0';
 			t--;
@@ -90,4 +89,19 @@ void usart_get(USART_TypeDef * USARTx, char* s, int len){
 char usart_get_char(USART_TypeDef * USARTx){
 	while(!(USARTx->SR & USART_SR_RXNE_Msk)) {}
 	return USARTx->DR;
+}
+
+void print_bits(int byte, int cnt){
+	int bit = 0;
+	char ch_bit = '\0';
+	for(int i=cnt-1; i>=0; i--)
+	{
+		bit = (byte&(0x1<<i))&&1;
+		ch_bit = (bit==1?'1':'0');
+		usart_send_char(USART1, ch_bit);
+	}
+}
+
+void print_number(uint16_t number){
+	
 }
