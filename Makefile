@@ -42,7 +42,7 @@ clean:
 	rm $(PROJECT)*
 
 load:
-	$(FLASHER) write $(PROJECT).bin 0x08000000
+	$(FLASHER) --reset write $(PROJECT).bin 0x08000000
 
 erase:
 	$(FLASHER) erase

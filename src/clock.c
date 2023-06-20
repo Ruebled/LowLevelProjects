@@ -48,21 +48,4 @@ void Clock_Init(){
 }
 
 void Periph_Clock_Init(){
-	// Enable SPI5 and it's clock
-	RCC->APB2ENR |= RCC_APB2ENR_SPI5EN;
-	//RCC->APB2RSTR |= RCC_APB2RSTR_SPI5RST;
-	//RCC->APB2RSTR &= ~RCC_APB2RSTR_SPI5RST;
-
-	// Init CS line for SPI5
-	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN; // Enable GPIOC clock
-	
-	// Initialize MISO MOSI SCK lines for SPI5
-	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOFEN; // Enable GPIOF clock
-
-	// Initialize GPIOG for LED 13 and 14
-	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOGEN;	
-
-	// Initialize USART clocks needed GPIOA and USART1	
-	RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
-	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;	
 }

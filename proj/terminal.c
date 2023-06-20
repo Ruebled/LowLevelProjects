@@ -5,59 +5,104 @@
 #include "system_stm32f4xx.h"
 #include "systick.h"
 #include "spi.h"
-#include "gpio.h"
+#include "gpio.h" 
 #include "usart.h"
 #include "clock.h"
 #include "gyro.h"
+#include "exti.h"
 
+extern uint8_t *USART1_Buffer_Tx, *USART4_Buffer_Tx;
+
+// Create a variable for clearing minicom settings when sent
+char clear[] = {0x1B, 0x5B, 0x32, 0x4A, '\r', '\010', '\000'};
+char *input_bar = "+--(user(+_+)stm32)-[~]\n+-$ ";
+char *str = "Welcome on this board\n";
 
 int main(void) {
 	Clock_Init();
-	Periph_Clock_Init();
 
+	//------------------------------Initialize SPI5----------------------------------//
+	// Enable SPI5 and it's clock
+	RCC->APB2ENR |= RCC_APB2ENR_SPI5EN;
+	RCC->APB2RSTR |= RCC_APB2RSTR_SPI5RST;
+	RCC->APB2RSTR &= ~RCC_APB2RSTR_SPI5RST;
+
+	// Init CS line for SPI5
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN; // Enable GPIOC clock
+	
+	// Initialize MISO MOSI SCK lines for SPI5
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOFEN; // Enable GPIOF clock
+
+	SPI5_Init();
+	//------------------------------------------------------------------------------//
+
+	//------------Systick initialize delay counter---------------------------------//
 	SysTick_Init(180000);
+	//------------------------------------------------------------------------------//
 
-	GYRO_Init();
+	//-------------------------------Init board leds--------------------------------//
+	// Initialize GPIOG for LED 13 and 14
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOGEN;	
 
-	// Init led 13 14 as output
 	GPIO_Init(GPIOG, 13);
 	GPIO_Init(GPIOG, 14);
+	//-----------------------------------------------------------------------------//
 
+
+	//-----------------------------------------Init USART ports----------------------//
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;	
+
+	//GPIO set mode 10 => Alternate function for pin 9 10
+	GPIOA->MODER &= ~(0xF << (2*9));
+	GPIOA->MODER |= 0xA << (2*9);
+
+	// Alternative function 7 = USART1 PA9
+	GPIOA->AFR[1] &= ~(0x770);
+	GPIOA->AFR[1] |= (0x770);
+
+	// GPIO Speed 11 for high speed
+	GPIOA->OSPEEDR |= 0xF <<(2*9);
+
+	//GPIO push-pull
+	GPIOA->PUPDR &= ~(0xF <<(2*9));
+	GPIOA->PUPDR |= 0x5 << (2*9);
+
+	// GPIO output type
+	GPIOA->OTYPER &= ~(0x3<<9);
+	//-------------------------------------------------------------------------------//
+
+	//----------------------------------------Init USART1---------------------------//
+	//Initialize USART1
+	RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+
+	// Initialise USART1
 	USART_Init(USART1);
 
+	////Interrupt on receive register not empty
+	//USART1->CR1 |= USART_CR1_RXNEIE;
 
-	// Init EXIT0 interrupt on PA0 User button
-	//RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+	//// Transmit register empty interrupt
+	//USART1->CR1 &= ~USART_CR1_TXEIE;
 
-	//GPIOA->MODER &= ~(0x1);
-	//GPIOA->OTYPER &= ~(0x1);
-	//GPIOA->OSPEEDR |= 2;
-	//GPIOA->PUPDR |= 1;
+	//// Set highest priority
+	//NVIC_SetPriority(USART1_IRQn, 0);
 
-	//SYSCFG->EXTICR[0] &= ~(0xF);
+	//// Enable NVIC interrupt
+	//NVIC_EnableIRQ(USART1_IRQn);
 
-	//EXTI->RTSR |= 0x1;
+	//-----------------------------------------------------------------------------//
 
-	////EXTI_FTSR |= 0x1;
-	//
-	//EXTI->IMR |= 0x1; // Set interrupt mask register
+	//----------------------------Init btn interruption----------------------------//
+	btn_enable();
+	//-----------------------------------------------------------------------------//
 
-	//NVIC_SetPriority(EXTI0_IRQn, 1);
-
-	//NVIC_EnableIRQ(EXTI0_IRQn); // Enable interrupt in button
-
-
-	// Create a variable for clearing minicom settings when sent
-	char clear[] = {0x1B, 0x5B, 0x32, 0x4A, '\r', '\010', '\000'};
+	// Clear console and print welcome message
 	usart_send(USART1, clear);
-
-	char *str = "Welcome on this board\n";
-	char *input_bar = "+--(user(+_+)stm32)-[~]\n+-$ ";
-
 	usart_send(USART1, str);
 
 	Delay(1000);
 
+	// Clear console again
 	usart_send(USART1, clear);
 
 	char st[100];
@@ -72,13 +117,14 @@ int main(void) {
 		usart_send(USART1, "\r");
 
 		if(!(strcmp(st, "temp"))){
-			uint8_t temp_reg = 0xE6;
+			uint8_t temp_reg = 0x26 |0x80;
 
-			SPI5_Write(temp_reg, &txBuff, 1);
-
+			SPI5_REG_SEL(temp_reg, &txBuff);
+			print_bits(txBuff, 8);
+			usart_send(USART1, "\n");
+			
 			//Read TEMP
-			SPI5_Write(temp_reg, rxBuff, 2);
-			//SPI5_Read(pBuff, 2);
+			SPI5_Read(rxBuff, 1);
 
 			//uint16_t temp = 0;
 
@@ -103,10 +149,11 @@ int main(void) {
 			print_bits(whoami, 8);
 			usart_send(USART1, "\n");
 
-			SPI5_Write(whoami, &txBuff, 1);
+			SPI5_REG_SEL(whoami, &txBuff);
+			print_bits(txBuff, 8);
+			usart_send(USART1, "\n");
 
-			SPI5_Write(whoami, rxBuff, 1);
-			//SPI5_Read(&rxBuff, 1);
+			SPI5_Read(rxBuff, 1);
 
 			if(*rxBuff == 0xD4){
 				usart_send(USART1, "The right thing\n");
@@ -114,10 +161,6 @@ int main(void) {
 
 			print_bits(*rxBuff, 8);
 			usart_send(USART1, "\n");
-
-		}else if(!(strcmp(st, "clear"))){
-
-			usart_send(USART1, clear);
 
 		}else if(!(strcmp(st, "axis"))){
 			GYRO_SET_XYZ(0x7);
@@ -171,36 +214,33 @@ int main(void) {
 			usart_send(USART1, "\n");
 
 			// Blink some led pattern at the end			
-			GPIOG->ODR ^= 1<<13;
-			Delay(250);
-			GPIOG->ODR ^= 1<<13;
-			Delay(250);
-			GPIOG->ODR ^= 1<<13;
-			Delay(250);
-			GPIOG->ODR ^= 1<<13;
+			GPIOG->BSRR |= 1<<13;
+			Delay(500);
+			GPIOG->BSRR |= 1<<(13+16);
+			Delay(500);
+		}else if(!(strcmp(st, "laser"))){
+			//GPIOA->ODR ^= 1<<6;
+			//Delay(250);
+			//GPIOA->ODR ^= 1<<6;
+			//Delay(250);
 		}else{
 			usart_send(USART1, "My bad");
-			GPIOG->ODR ^= 1<<13;
-			GPIOG->ODR ^= 1<<14;
-			Delay(250);
-			GPIOG->ODR ^= 1<<13;
-			GPIOG->ODR ^= 1<<14;
+
+			GPIOG->BSRR |= 1<<13;
+			Delay(500);
+			GPIOG->BSRR |= 1<<(13+16);
+			Delay(500);
 		}
 		usart_send(USART1, "\n");
 	}
 
-	//while (1){
-	//	GPIOG->ODR ^= 1<<14;
-	//	Delay(1000);
-	//	GPIOG->ODR ^= 1<<14;	
-	//	Delay(1000);
-	//}
+	//	GPIOG->BSRR |= 1<<13;
+	//	Delay(500);
+	//	GPIOG->BSRR |= 1<<(13+16);
+	//	Delay(500);
+	//	GPIOG->BSRR |= 1<<14;
+	//	Delay(500);
+	//	GPIOG->BSRR |= 1<<(14+16);
+	//	Delay(500);
 }
 
-//void EXTI0_Handler(void){
-//	if((EXTI->PR & 1) == 1){
-//		GPIOG->ODR ^= 1<<13;
-//
-//		EXTI->PR |= 0x1;
-//	}
-//}

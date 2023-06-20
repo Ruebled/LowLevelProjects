@@ -3,32 +3,17 @@
 #include "usart.h"
 #include <stdlib.h>
 
+#define BufferSize 32
+
+//uint8_t USART_Buffer_Rx[BufferSize], USART4_Buffer_Rx[BufferSize];
+//volatile uint32_t Rx1_Counter = 0, Rx4_Counter = 0;
+char* USART1_Buffer_Tx, *USART4_Buffer_Tx;
+volatile uint32_t Tx1_Counter = 0, Tx4_Counter = 0;
+
 void USART_Init (USART_TypeDef * USARTx){
-	//GPIO set mode 10 => Alternate function for pin 9 10
-	GPIOA->MODER &= ~(0xF << (2*9));
-	GPIOA->MODER |= 0xA << (2*9);
-
-	// Alternative function 7 = USART1 PA9
-	GPIOA->AFR[1] &= ~(0x770);
-	GPIOA->AFR[1] |= (0x770);
-
-	// GPIO Speed 11 for high speed
-	GPIOA->OSPEEDR |= 0xF <<(2*9);
-
-	//GPIO push-pull
-	GPIOA->PUPDR &= ~(0xF <<(2*9));
-	GPIOA->PUPDR |= 0x5 << (2*9);
-
-	// GPIO output type
-	GPIOA->OTYPER &= ~(0x3<<9);
-
-
-	//Initialize USART1
-	USARTx->CR1 &= USART_CR1_UE;
-
 	USARTx->CR1 |= (1<<15); // Oversampling by 8
 
-	USARTx->CR1 |= (USART_CR1_TE | USART_CR1_RE) ;
+	USARTx->CR1 |= (USART_CR1_TE | USART_CR1_RE);
 	
 	USARTx->CR2 &= ~(3UL<<12);
 
@@ -41,6 +26,44 @@ void USART_Init (USART_TypeDef * USARTx){
 	USARTx->CR1 |= USART_CR1_UE;
 }
 
+//void USART1_IRQHandler(void){
+//	receive(USART1, USART1_Buffer_Rx, &Rx1_Counter);
+//}
+//
+//
+//void receive(USART_TypeDef * USARTx, uint8_t *buffer, uint32_t *pCounter){
+//	if(USARTx->ISR & USART_SR_RXNE){
+//		buffer[*pCounter] = USARTx->DR;
+//		(*pCounter)++;
+//		if(buffer[*pCounter] == '\0'){
+//			(*pCounter) = 0;
+//			USARTx->SR &= ~ USART_SR_RXNE;
+//			return;
+//		}
+//	}
+//}
+//
+//void UART_Send(USART_TypeDef *USARTx, char *buffer){
+//	USARTx->CR1 |= USART_CR1_TXEIE;
+//
+//	USART1_Buffer_Tx = buffer;
+//	USARTx->DR = buffer[0];
+//}
+//
+//void USART1_IRQHandler(void){
+//	send(USART1, USART1_Buffer_Tx);
+//}
+//
+//void send(USART_TypeDef *USARTx, char * buffer){
+//	usart_send(USARTx, buffer);
+//	if(USARTx->SR & USART_SR_TXE){
+//		usart_send(USARTx, buffer);
+//		USARTx->CR1 &= ~USART_CR1_TXEIE;
+//	}
+//}
+
+
+// Sequential adressing outdated
 void usart_send(USART_TypeDef * USARTx, char *s)
 {
 	while(*s != '\0')
@@ -73,6 +96,7 @@ void usart_get(USART_TypeDef * USARTx, char* s, int len){
 			*t = '\0';
 			t--;
 		}else{
+			//solve this shit
 			if((t-s) >= (len-1)){
 				break;
 			}
@@ -105,3 +129,4 @@ void print_bits(int byte, int cnt){
 void print_number(uint16_t number){
 	
 }
+
